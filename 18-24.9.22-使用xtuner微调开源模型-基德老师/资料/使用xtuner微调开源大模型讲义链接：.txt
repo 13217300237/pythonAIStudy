@@ -1,0 +1,1 @@
+使用xtuner微调开源大模型讲义链接：https://docs.qq.com/doc/p/c82bd5576c813cae2cb8538303a4a95bd52fb324
