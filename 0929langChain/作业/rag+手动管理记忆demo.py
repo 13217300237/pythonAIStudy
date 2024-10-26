@@ -6,11 +6,13 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.messages import HumanMessage, AIMessage
 import datetime
+import time
+
 
 memoryList = []
 
 # 加载线上文档
-loader = WebBaseLoader("https://doc.yuanfenju.com/")
+loader = WebBaseLoader("https://juejin.cn/post/7308289054029037607")
 data = loader.load()
 
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
@@ -31,6 +33,15 @@ def log(*args):
     message = " ".join(map(str, args))
     # 打印时间戳和日志消息
     print(f"[{current_time}] {message}")
+
+
+def typewriter_effect_array(texts, delay=0.01):
+    for text in texts:
+        for char in text:
+            print(char, end="", flush=True)
+            time.sleep(delay)
+    print()  # 在每个字符串结束后换行
+    time.sleep(delay * 2)  # 在每个字符串之间暂停一会儿
 
 
 def ask(question):
@@ -58,15 +69,14 @@ def ask(question):
     chat = ChatOpenAI(model="gpt-4o-mini")
     document_chain = create_stuff_documents_chain(chat, question_answering_prompt)
     log("AI正在思考......")
-    result = document_chain.invoke(
+    result = document_chain.stream(
         {
             "context": docs,
             "messages": memoryList,
         }
     )
-
-    log("AI的回答是", result)
-    memoryList.append(AIMessage(result))
+    typewriter_effect_array(result)
+    memoryList.append(AIMessage("".join(result)))
 
 
 if __name__ == "__main__":
