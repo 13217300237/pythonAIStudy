@@ -2,7 +2,7 @@ import hashlib
 import os
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_openai import ChatOpenAI, OpenAI
-from typing import Optional, Iterable
+from typing import List, Optional, Iterable
 from langchain_core.messages import AIMessageChunk
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import AddableDict
@@ -57,7 +57,7 @@ class MyLLM:
     __retrievers = {}
     __llm = OpenAI(temperature=0)
 
-    collections = [None]
+    collections = []
 
     # 做知识库文件的向量化
     def knowledge_file_embedding(self):
@@ -65,7 +65,7 @@ class MyLLM:
 
         list = os.listdir(KNOWLEDGE_DIR)
         print("已有的知识库", list)
-        self.collections = [None]
+        self.collections = []
         for file in list:
             print(file)
             self.collections.append(file)
@@ -114,11 +114,11 @@ class MyLLM:
         return ensemble_retriever
 
     # 创建调用AI用的chain
-    def get_chain(self, collection, model, max_length, temperature):
+    def get_chain(self, collections, model, max_length, temperature):
         retriever = None
 
-        if collection:
-            retriever = self.get_retrievers(collection)
+        if collections:
+            retriever = self.get_retrievers(collections)
 
         print("开始创建chain，保留最后6条历史")
         # 为了节约性能，不要在每次getChain的时候都去读取全部记忆
@@ -130,14 +130,7 @@ class MyLLM:
         chat = ChatOpenAI(
             model=model, temperature=temperature, max_tokens=max_length
         )  # 创建client，为创建链条做准备
-        system_prompt = "你叫豆瓜，一个帮助人们解答各种问题的助手。"  # 定义AI的自我认知
-        normal_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", system_prompt),
-                ("placeholder", "{chat_history}"),
-                ("human", "{input}"),
-            ]
-        )
+
         print("开始创建 chain")
 
         # 考虑rag的情况
@@ -160,6 +153,16 @@ class MyLLM:
             chain = create_retrieval_chain(retriever, chain)
             print("rag_chain:", chain)
         else:
+            system_prompt = (
+                "你叫豆瓜，一个帮助人们解答各种问题的助手。"  # 定义AI的自我认知
+            )
+            normal_prompt = ChatPromptTemplate.from_messages(
+                [
+                    ("system", system_prompt),
+                    ("placeholder", "{chat_history}"),
+                    ("human", "{input}"),
+                ]
+            )
             chain = normal_prompt | chat | streaming_parse  # 创建基础链条
 
         # 创建一个带聊天记忆的链条
@@ -175,32 +178,37 @@ class MyLLM:
         return memoryed_chain
 
     # 创建知识库检索器
-    def get_retrievers(self, collection):
-        colleciton_name = get_md5(collection)
-        print("知识库名字md5:", colleciton_name)
-        if colleciton_name not in self.__retrievers:
-            return None
-        retriever = self.__retrievers[colleciton_name]
-        contextualCompressionRetriever = ContextualCompressionRetriever(
-            base_compressor=LLMChainFilter.from_llm(self.__llm),
-            base_retriever=RePhraseQueryRetriever.from_llm(retriever, self.__llm),
-        )
-        return contextualCompressionRetriever
+    def get_retrievers(self, collections):
+        retrievers = []
+        for collection in collections:
+            if collection is None:
+                continue
+            print("collection:", collection)
+            colleciton_name = get_md5(collection)
+            print("知识库名字md5:", colleciton_name)
+            if colleciton_name not in self.__retrievers:
+                return None
+            retriever = self.__retrievers[colleciton_name]
+            contextualCompressionRetriever = ContextualCompressionRetriever(
+                base_compressor=LLMChainFilter.from_llm(self.__llm),
+                base_retriever=RePhraseQueryRetriever.from_llm(retriever, self.__llm),
+            )
+            retrievers.append(contextualCompressionRetriever)
 
-    # 执行AI回复
-    def invoke(self, collection, question, model, max_length, temperature):
-        return self.get_chain(collection, model, max_length, temperature).invoke(
-            {"input": question},
-            {"configurable": {"session_id": "unused"}},  # 这个unused应该是和历史有关系
-        )
+        if len(retrievers) == 0:
+            return None
+
+        print("最终检索器列表", ">" * 10, retrievers)
+
+        return EnsembleRetriever(retrievers=retrievers)
 
     # 进行流式回复
-    def stream(self, collection, question, model, max_length, temperature):
+    def stream(self, collections: List[str], question, model, max_length, temperature):
         print(">>>question:", question)
         print(">>>model:", model)
         print(">>>max_length:", max_length)
         print(">>>temperature:", temperature)
-        return self.get_chain(collection, model, max_length, temperature).stream(
+        return self.get_chain(collections, model, max_length, temperature).stream(
             {"input": question},
             {"configurable": {"session_id": "unused"}},  # 这个unused应该是和历史有关系
         )

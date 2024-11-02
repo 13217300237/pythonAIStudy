@@ -1,4 +1,5 @@
 import os
+from random import choice
 import shutil
 import gradio as gr
 from my_knowledge_base import KNOWLEDGE_DIR, LLM_MODELS
@@ -109,8 +110,8 @@ def upload_knowledge_base(file_paths):
         return (
             None,
             gr.update(
-                choices=MyLLM().knowledge_file_embedding(),
-                value=MyLLM().collections[0],
+                choices=llm.knowledge_file_embedding(),
+                value=[],
             ),
             f"发现不支持的文件 {s}",
         )
@@ -137,8 +138,8 @@ def upload_knowledge_base(file_paths):
     return (
         None,
         gr.update(
-            choices=MyLLM().knowledge_file_embedding(),
-            value=MyLLM().collections[0],
+            choices=llm.knowledge_file_embedding(),
+            value=llm.collections[:1],
         ),
         "",
     )  # copy过来之后直接进行向量化
@@ -160,7 +161,7 @@ def onTokenCountSliderChanged(value):
 # [model] 选择的模型
 # [temperature] 模型的温度，决定Ai回答的随机性
 # [max_length] 模型回复的最大长度
-def llm_reply(collection, chat_history, model, temperature, max_length):
+def llm_reply(collections, chat_history, model, temperature, max_length):
     # 获得用户提的最后一个问题
     question = chat_history[-1][0]  # 倒数第一对记录，取0位置，也就是用户发送的内容
     # 使用问答链进行回复
@@ -168,19 +169,19 @@ def llm_reply(collection, chat_history, model, temperature, max_length):
     print("---model:", model)
     print("---max_length:", max_length)
     print("temperature:", temperature)
-    response = llm.stream(collection, question, model, max_length, temperature)
+    response = llm.stream(collections, question, model, max_length, temperature)
     print("response:", response)
     chat_history[-1][1] = ""  # 先把AI的回复清空
     print("chat_history:", chat_history)
 
     for chunk in response:
-        print("chunk:", chunk)
+        # print("chunk:", chunk)
         if "context" in chunk:
             for doc in chunk["context"]:
                 print("doc:", doc)
         if "answer" in chunk:
             chunk_content = chunk["answer"]
-            print("chunk_content", chunk_content)
+            # print("chunk_content", chunk_content)
             if chunk_content is not None:
                 chat_history[-1][1] += chunk_content
                 yield chat_history
@@ -235,11 +236,12 @@ with gr.Blocks() as demo:
             )
             gr.Markdown("### 知识库")
             konwledge_select = gr.Dropdown(
-                choices=MyLLM().collections,
-                value=MyLLM().collections[0],
+                choices=llm.knowledge_file_embedding(),
+                value=llm.collections,
                 label="选择知识库",
                 interactive=True,
                 scale=1,
+                multiselect=True,
             )
             file_upload = gr.File(
                 label="选择知识库文件，仅支持 pdf,txt,doc",
@@ -287,7 +289,6 @@ with gr.Blocks() as demo:
         ],  # 输入组件 chatBox聊天历史， model_select 模型选择,tempatureSlider温度选择， replyMaxCountSlider 回复最大长度
         outputs=[chatbot_box],
     )
-
 
 # 启动 Gradio 应用
 demo.launch(inbrowser=True, server_name="0.0.0.0", server_port=5001)
