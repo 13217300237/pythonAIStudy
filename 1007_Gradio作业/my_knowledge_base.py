@@ -10,7 +10,8 @@ from langchain_community.document_loaders import (
 )
 
 # UPLOAD_DIR = "uploads"
-LLM_MODELS = "gpt-4o", [
+LLM_MODELS = [
+    "gpt-4o",
     "gpt-3.5-turbo",
 ]
 KNOWLEDGE_DIR = "chroma/knowledge/"
