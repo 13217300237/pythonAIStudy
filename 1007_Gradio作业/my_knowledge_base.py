@@ -10,7 +10,9 @@ from langchain_community.document_loaders import (
 )
 
 # UPLOAD_DIR = "uploads"
-LLM_MODELS = ["gpt-3.5-turbo", "gpt-4o"]
+LLM_MODELS = "gpt-4o", [
+    "gpt-3.5-turbo",
+]
 KNOWLEDGE_DIR = "chroma/knowledge/"
 
 
@@ -31,17 +33,19 @@ class MyCustomLoader(BaseLoader):
         FileType.MD: (UnstructuredMarkdownLoader, {}),
     }
 
-        # 初始化方法  将加载的文件进行切分
+    # 初始化方法  将加载的文件进行切分
     def __init__(self, file_path: str):
-        loader_class, params = self.file_type[detect_filetype(file_path)] # 加载对应的文件加载器
+        loader_class, params = self.file_type[
+            detect_filetype(file_path)
+        ]  # 加载对应的文件加载器
         print("loader_class:", loader_class)
         print("params:", params)
         self.loader: BaseLoader = loader_class(file_path, **params)
         print("self.loader:", self.loader)
-        self.text_splitter = RecursiveCharacterTextSplitter( # 内容分隔
+        self.text_splitter = RecursiveCharacterTextSplitter(  # 内容分隔
             separators=["\n\n", "\n", " ", ""],
-            chunk_size=1000, # 每1000个字符分隔一次
-            chunk_overlap=200, # 用末尾200个字符当做衔接词，增强语义
+            chunk_size=1000,  # 每1000个字符分隔一次
+            chunk_overlap=200,  # 用末尾200个字符当做衔接词，增强语义
             length_function=len,
         )
 
