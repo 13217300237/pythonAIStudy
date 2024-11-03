@@ -1,5 +1,4 @@
 import os
-from random import choice
 import shutil
 import gradio as gr
 from my_knowledge_base import KNOWLEDGE_DIR, LLM_MODELS
