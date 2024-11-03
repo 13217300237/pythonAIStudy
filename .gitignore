@@ -10,3 +10,16 @@
 1007_Gradio作业/test/test04.py
 1007_Gradio作业/record_manager_cache.sql
 1007_Gradio作业/record_manager_cache.sql
+1007_Gradio作业/__pycache__/my_llm.cpython-312.pyc
+BAAI/bge-reranker-large/.gitattributes
+BAAI/bge-reranker-large/config.json
+BAAI/bge-reranker-large/model.safetensors
+BAAI/bge-reranker-large/pytorch_model.bin
+BAAI/bge-reranker-large/README.md
+BAAI/bge-reranker-large/sentencepiece.bpe.model
+BAAI/bge-reranker-large/special_tokens_map.json
+BAAI/bge-reranker-large/tokenizer_config.json
+BAAI/bge-reranker-large/tokenizer.json
+BAAI/bge-reranker-large/onnx/model.onnx
+BAAI/bge-reranker-large/onnx/model.onnx_data
+.DS_Store

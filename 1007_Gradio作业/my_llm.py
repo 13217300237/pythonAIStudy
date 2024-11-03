@@ -16,6 +16,7 @@ from langchain.retrievers import (
     EnsembleRetriever,
     RePhraseQueryRetriever,
 )
+from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from langchain.retrievers.document_compressors import (
     LLMChainFilter,
     CrossEncoderReranker,
@@ -44,6 +45,7 @@ def get_md5(input_string):
 
 
 embedding_model = "BAAI/bge-large-zh-v1.5"
+rerank_model = "BAAI/bge-reranker-large"
 model_kwargs = {"device": "cpu"}
 # 向量化模型
 embeddings = HuggingFaceBgeEmbeddings(
@@ -192,12 +194,22 @@ class MyLLM:
                 base_compressor=LLMChainFilter.from_llm(self.__llm),
                 base_retriever=RePhraseQueryRetriever.from_llm(retriever, self.__llm),
             )
-            retrievers.append(contextualCompressionRetriever)
+            """rerank https://python.langchain.com/v0.2/docs/integrations/document_transformers/cross_encoder_reranker/"""
+            model = HuggingFaceCrossEncoder(
+                model_name=rerank_model, model_kwargs=model_kwargs
+            )
+            compressor = CrossEncoderReranker(model=model, top_n=3)
+
+            compression_retriever = ContextualCompressionRetriever(
+                base_compressor=compressor,
+                base_retriever=contextualCompressionRetriever,
+            )
+            retrievers.append(compression_retriever)
 
         if len(retrievers) == 0:
             return None
 
-        print("最终检索器列表", ">" * 10, retrievers)
+        # print("最终检索器列表", ">" * 10, retrievers)
 
         return EnsembleRetriever(retrievers=retrievers)
 

@@ -138,7 +138,7 @@ def upload_knowledge_base(file_paths):
         None,
         gr.update(
             choices=llm.knowledge_file_embedding(),
-            value=llm.collections[:1],
+            value=llm.collections,
         ),
         "",
     )  # copy过来之后直接进行向量化

@@ -27,5 +27,5 @@ def test_model(model_patch="../BAAI/bge-reranker-large"):
     print(r)
 
 
-download_model()
-# test_model()
+# download_model()
+test_model()
