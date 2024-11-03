@@ -72,9 +72,8 @@ class MyLLM:
             file_path = os.path.join(KNOWLEDGE_DIR, file)
             collection_name = get_md5(file)  # 用md5算法对一个知识库进行唯一标识
 
-            if (
-                collection_name in self.__retrievers
-            ):  # 过滤掉已经向量化的文件放置重复动作
+            # 过滤掉已经向量化的文件放置重复动作
+            if collection_name in self.__retrievers:
                 continue
             loader = MyCustomLoader(file_path)
             print("loader", loader)
